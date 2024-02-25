@@ -1,0 +1,67 @@
+/*{
+    "author": "Pribetic, Dean",
+    "targets": ["omnifocus"],
+    "type": "action",
+    "identifier": "findmethod.co.clean-up-inbox",
+    "version": "0.1",
+    "description": "A plug-in that sweeps through the inbox and does a bunch of housekeeping work on the items in there",
+    "label": "clean-up-inbox",
+    "mediumLabel": "clean-up-inbox",
+    "longLabel": "clean-up-inbox",
+    "paletteLabel": "clean-up-inbox",
+}*/
+(() => {
+    var action = new PlugIn.Action(function(selection) {
+        let wikilinkRE =  /\[\[([\w\s]+)\]\]/g;
+        let markdownLinkRE = /(.*)\[(.+)\]\((.+)\)(.*)/;
+    
+    
+        function fixMarkdownLinks(task) {
+            const found = task.name.match(markdownLinkRE);
+            if (found) {
+                task.note += "\n" + found[3];
+                task.name="";
+                if (found[1]) 
+                    task.name += found[1];
+                if (found[2])
+                    task.name += found[2];
+                if (found[4]) 
+                    task.name += found[4];
+            }
+        }
+    
+        function tagPeople(task) {
+            // adds tags to tasks that have relevant people in them
+            while (foundLinks = wikilinkRE.exec(task.name)) {
+                const personTag = flattenedTags.byName(foundLinks[1]);
+                if (personTag) {
+                    task.addTag(personTag)
+                }
+            } 
+        }
+        
+        function processPeopleLinks(task) {
+           // turns notes with markdown style urls into sensible notes
+           
+           let result = task.name.replace(wikilinkRE, "$1");
+           task.name = result;
+        }
+        
+        inbox.apply(task => {
+            if (task.taskStatus != Task.Status.Completed && task.taskStatus != Task.Status.Dropped) {
+                tagPeople(task);
+                fixMarkdownLinks(task);
+                processPeopleLinks(task); // Replace wikilinks with normal text
+            }
+        })
+     
+    });
+
+    // If needed, uncomment, and add a function that returns true if the current selection is appropriate for the action.
+    
+    action.validate = function(selection){
+        return true;
+    };
+        
+    return action;
+})();
